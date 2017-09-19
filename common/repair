@@ -136,4 +136,4 @@ _check_repair()
 }
 
 # make sure this script returns success
-/bin/true
+true

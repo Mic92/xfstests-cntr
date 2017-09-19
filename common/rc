@@ -2086,7 +2086,7 @@ _require_user()
     fi
     _cat_passwd | grep -q $qa_user
     [ "$?" == "0" ] || _notrun "$qa_user user not defined."
-    echo /bin/true | su $qa_user
+    echo true | su $qa_user
     [ "$?" == "0" ] || _notrun "$qa_user cannot execute commands."
 }
 
@@ -4325,4 +4325,4 @@ init_rc
 
 ################################################################################
 # make sure this script returns success
-/bin/true
+true

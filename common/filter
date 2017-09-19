@@ -632,4 +632,4 @@ _filter_getcap()
 }
 
 # make sure this script returns success
-/bin/true
+true

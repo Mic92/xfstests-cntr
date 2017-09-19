@@ -282,4 +282,4 @@ esac
 
 export MAX_ATTRVAL_SIZE
 # make sure this script returns success
-/bin/true
+true

@@ -115,4 +115,4 @@ _filter_btrfs_cloner_error()
 }
 
 # make sure this script returns success
-/bin/true
+true

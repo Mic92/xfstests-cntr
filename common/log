@@ -609,4 +609,4 @@ _get_log_configs()
 }
 
 # make sure this script returns success
-/bin/true
+true

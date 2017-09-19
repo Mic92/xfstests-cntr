@@ -330,4 +330,4 @@ _report_quota_inodes() {
 }
 
 # make sure this script returns success
-/bin/true
+true

@@ -1539,4 +1539,4 @@ _count_restoredir_files()
 
 
 # make sure this script returns success
-/bin/true
+true
