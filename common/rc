@@ -141,6 +141,8 @@ case "$FSTYP" in
 	 ;;
     glusterfs)
 	 ;;
+    fuse.cntr)
+	 ;;
     overlay)
 	 . ./common/overlay
 	 ;;
@@ -342,11 +344,35 @@ _try_scratch_mount()
 	if [ "$FSTYP" == "overlay" ]; then
 		_overlay_scratch_mount $*
 		return $?
+	elif [ "$FSTYP" == "fuse.cntr" ]; then
+		_cntr_mount $SCRATCH_DEV $SCRATCH_MNT $*
+ 		return $?
 	fi
 	_mount -t $FSTYP `_scratch_mount_options $*`
 }
 
 # mount scratch device with given options and _fail if mount fails
+_cntr_mount()
+{
+	# $1 ... cipherdir
+	# $2 ... mountpoint
+	# $3 ... -o
+	# $4 ... remount,ro / nosuid / etc
+
+	#o="dev,suid"
+	if [[ "$4" == *"remount"* ]]; then
+		fusermount -u $2
+	fi
+	#if [[ "$4" == *"ro"* ]]; then
+	#	o="$o,ro"
+	#elif [[ "$4" == "nosuid" ]]; then
+	#	# Drop suid option
+	#	o="dev"
+	#fi
+	#gocryptfs -extpass "echo test" -quiet -nosyslog -allow_other -ko $o $1 $2
+	cntrfs-test $1 $2
+}
+
 _scratch_mount()
 {
 	_try_scratch_mount $* || _fail "mount failed"
@@ -361,6 +387,9 @@ _scratch_unmount()
 	btrfs)
 		$UMOUNT_PROG $SCRATCH_MNT
 		;;
+	fuse.cntr)
+		fusermount -u $SCRATCH_MNT
+		;;
 	*)
 		$UMOUNT_PROG $SCRATCH_DEV
 		;;
@@ -369,6 +398,11 @@ _scratch_unmount()
 
 _scratch_remount()
 {
+    if [ "$FSTYP" == "fuse.cntr" ]; then
+        echo "_scratch_remount: cntr: unsupported option"
+        return 1
+    fi
+
     local opts="$1"
 
     if test -n "$opts"; then
@@ -424,6 +458,9 @@ _test_mount()
     if [ "$FSTYP" == "overlay" ]; then
         _overlay_test_mount $*
         return $?
+    elif [ "$FSTYP" == "fuse.cntr" ]; then
+        _cntr_mount $TEST_DEV $TEST_DIR $*
+        return $?
     fi
     _test_options mount
     _mount -t $FSTYP $TEST_OPTIONS $TEST_FS_MOUNT_OPTS $SELINUX_MOUNT_OPTIONS $* $TEST_DEV $TEST_DIR
@@ -433,6 +470,8 @@ _test_unmount()
 {
 	if [ "$FSTYP" == "overlay" ]; then
 		_overlay_test_unmount
+	elif [ "$FSTYP" == "fuse.cntr" ]; then
+		fusermount -u $TEST_DIR
 	else
 		$UMOUNT_PROG $TEST_DEV
 	fi
@@ -627,6 +666,9 @@ _test_mkfs()
     glusterfs)
 	# do nothing for glusterfs
 	;;
+    fuse.cntr)
+	# do nothing for cntr
+	;;
     overlay)
 	# do nothing for overlay
 	;;
@@ -660,6 +702,9 @@ _mkfs_dev()
 	;;
     virtiofs)
 	# do nothing for virtiofs
+	;;
+    fuse.cntr)
+	# do nothing for overlay
 	;;
     overlay)
 	# do nothing for overlay
@@ -725,7 +770,7 @@ _scratch_mkfs()
 	local mkfs_status
 
 	case $FSTYP in
-	nfs*|cifs|ceph|overlay|glusterfs|pvfs2|9p|virtiofs)
+	nfs*|cifs|ceph|overlay|glusterfs|pvfs2|9p|virtiofs|fuse.cntr)
 		# unable to re-create this fstyp, just remove all files in
 		# $SCRATCH_MNT to avoid EEXIST caused by the leftover files
 		# created in previous runs
@@ -1489,6 +1534,12 @@ _check_mounted_on()
 _require_scratch_nocheck()
 {
     case "$FSTYP" in
+  fuse.cntr)
+		if [[ ! -d "$TEST_DEV" ]] || [[ ! -d "$TEST_DIR" ]];
+		then
+		    _notrun "this test requires a valid $TEST_DIR and valid $TEST_DEV"
+		fi
+    ;;
 	glusterfs)
 		echo $SCRATCH_DEV | egrep -q ":/?" > /dev/null 2>&1
 		if [ -z "$SCRATCH_DEV" -o "$?" != "0" ]; then
@@ -1613,6 +1664,12 @@ _require_scratch_size()
 _require_test()
 {
     case "$FSTYP" in
+  fuse.cntr)
+		if [[ ! -d "$TEST_DEV" ]] || [[ ! -d "$TEST_DIR" ]];
+		then
+		    _notrun "this test requires a valid $TEST_DIR and valid $TEST_DEV"
+		fi
+    ;;
 	glusterfs)
 		echo $TEST_DEV | egrep -q ":/?" > /dev/null 2>&1
 		if [ -z "$TEST_DEV" -o "$?" != "0" ]; then
@@ -2535,7 +2592,7 @@ _require_scratch_richacl()
 		;;
 	ext4)   _require_scratch_richacl_ext4
 		;;
-	nfs*|cifs|overlay)
+	nfs*|cifs|overlay|fuse.cntr)
 		_require_scratch_richacl_support
 		;;
 	*)      _notrun "this test requires richacl support on \$SCRATCH_DEV"
@@ -2550,7 +2607,7 @@ _scratch_mkfs_richacl()
 		;;
 	ext4)   _scratch_mkfs -O richacl
 		;;
-	nfs*|cifs|overlay)
+	nfs*|cifs|overlay|fuse.cntr)
 		_scratch_mkfs
 		;;
 	esac
@@ -2642,7 +2699,9 @@ _mount_or_remount_rw()
 	local mountpoint=$3
 
 	if [ $USE_REMOUNT -eq 0 ]; then
-		if [ "$FSTYP" != "overlay" ]; then
+		if [ "$FSTYP" == "fuse.cntr" ]; then
+			_cntr_mount $device $mountpoint $mount_opts
+		elif [ "$FSTYP" != "overlay" ]; then
 			_mount -t $FSTYP $mount_opts $device $mountpoint
 		else
 			_overlay_mount $device $mountpoint
@@ -2652,6 +2711,10 @@ _mount_or_remount_rw()
 			return 0 # ok=0
 		fi
 	else
+		if [ "$FSTYP" == "fuse.cntr" ]; then
+			echo "cntr does not support remounting"
+			return 0
+		fi
 		_remount $device rw
 	fi
 
@@ -2777,6 +2840,9 @@ _check_test_fs()
     ceph)
 	# no way to check consistency for CephFS
 	;;
+    fuse.cntr)
+	# no way to check consistency for GlusterFS
+	;;
     glusterfs)
 	# no way to check consistency for GlusterFS
 	;;
@@ -2839,6 +2905,9 @@ _check_scratch_fs()
 	# no way to check consistency for CephFS
 	;;
     glusterfs)
+	# no way to check consistency for GlusterFS
+	;;
+    fuse.cntr)
 	# no way to check consistency for GlusterFS
 	;;
     overlay)
@@ -3505,15 +3574,18 @@ _require_atime()
 {
 	_exclude_scratch_mount_option "noatime"
 	case $FSTYP in
-	nfs|cifs)
+	nfs|cifs|fuse.cntr)
 		_notrun "atime related mount options have no effect on $FSTYP"
 		;;
 	esac
-
 }
 
 _require_relatime()
 {
+	if [ "$FSTYP" == "fuse.cntr" ]; then
+		_notrun "atime related mount options have no effect on cntr"
+	fi
+
         _scratch_mkfs > /dev/null 2>&1
         _try_scratch_mount -o relatime || \
                 _notrun "relatime not supported by the current kernel"
