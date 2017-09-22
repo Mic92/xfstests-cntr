@@ -4,6 +4,7 @@ LT_INIT
 AC_CONFIG_SRCDIR([src/xfsctl.c])
 AC_PACKAGE_GLOBALS(xfstests)
 AC_PACKAGE_UTILITIES(xfstests)
+AM_INIT_AUTOMAKE([])
 
 AC_HEADER_STDC
     AC_CHECK_HEADERS([	assert.h		\
