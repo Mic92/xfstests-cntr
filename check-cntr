@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+
+if [[ $EUID -ne 0 ]]; then
+  echo "must run as root"
+  exit 1
+fi
+
+echo "fuse-xfstests version $(git rev-parse --short HEAD)"
+date -u
+
+# Test root dir
+
+R=/tmp/check-cntr
+export FSTYP=fuse.cntr
+export TEST_DEV=$R/testdev
+export TEST_DIR=$R/testdir
+export SCRATCH_DEV=$R/scratchdev
+export SCRATCH_MNT=$R/scratchdir
+export RUST_BACKTRACE=1
+
+mounts=($TEST_DEV $TEST_DIR $SCRATCH_DEV $SCRATCH_MNT)
+
+mkdir -p "${mounts[@]}"
+umount "${mounts[@]}"
+mount -t tmpfs -o size=5G none $SCRATCH_DEV
+mount -t tmpfs -o size=5G none $TEST_DEV
+
+#cntrfs-test $TEST_DEV $TEST_DIR &
+#echo -n "mount: "
+#while ! mountpoint $TEST_DIR; do
+#  echo "."
+#  sleep 2
+#done
+
+bash ./check $*
