@@ -2171,7 +2171,7 @@ s,^\s*$,,;
 
 _user_do()
 {
-	echo $1 | su -s /bin/bash $qa_user 2>&1 | _filter_user_do
+	echo $1 | su -s $(which bash) $qa_user 2>&1 | _filter_user_do
 }
 
 _require_xfs_io_command()
