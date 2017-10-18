@@ -18,18 +18,24 @@ export SCRATCH_DEV=$R/scratchdev
 export SCRATCH_MNT=$R/scratchdir
 export RUST_BACKTRACE=1
 
-mounts=($TEST_DEV $TEST_DIR $SCRATCH_DEV $SCRATCH_MNT)
+mounts=($TEST_DIR $TEST_DEV $SCRATCH_MNT $SCRATCH_DEV)
 
+for m in "${mounts[@]}"; do
+  umount "$m"
+  while mountpoint -q "$m"; do
+    echo "umount '$m'"
+    umount "$m"
+  done
+done
+
+rm -rf "$R"
 mkdir -p "${mounts[@]}"
-umount "${mounts[@]}"
+
 mount -t tmpfs -o size=5G none $SCRATCH_DEV
 mount -t tmpfs -o size=5G none $TEST_DEV
+#mount /dev/zvol/zroot/xfs-scratch $SCRATCH_DEV
+#mount /dev/zvol/zroot/xfs-test $TEST_DEV
 
-#cntrfs-test $TEST_DEV $TEST_DIR &
-#echo -n "mount: "
-#while ! mountpoint $TEST_DIR; do
-#  echo "."
-#  sleep 2
-#done
+mount | grep "$R"
 
 bash ./check $*
