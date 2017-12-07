@@ -43,7 +43,7 @@ _scratch_mkfs > $seqres.full 2>&1
 _scratch_mount >> $seqres.full 2>&1
 
 LS=$(which ls --skip-alias --skip-functions)
-SCRATCH_LS=$SCRATCH_MNT/ls_on_scratch
+SCRATCH_LS=$SCRATCH_MNT/ls
 cp $LS $SCRATCH_LS
 
 $SCRATCH_LS $SCRATCH_LS | _filter_scratch
