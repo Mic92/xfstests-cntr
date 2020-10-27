@@ -369,9 +369,9 @@ _cntr_mount()
 	#	# Drop suid option
 	#	o="dev"
 	#fi
-	#strace -ff -f -o "/tmp/trace.$(basename $2)" -- cntrfs-test $1 $2 &
-	cntrfs-test $1 $2
-  while ! mountpoint -q "$2"; do sleep 1; done
+	#strace -ff -f -o "/tmp/trace.$(basename $2)" -- cntrfs $1 $2 &
+	cntrfs $1 $2
+	while ! mountpoint -q "$2"; do sleep 1; done
 }
 
 _scratch_mount()
