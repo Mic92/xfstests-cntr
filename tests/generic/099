@@ -1,4 +1,4 @@
-#! /bin/bash
+#! /usr/bin/env bash
 # SPDX-License-Identifier: GPL-2.0
 # Copyright (c) 2000-2002 Silicon Graphics, Inc.  All Rights Reserved.
 #
@@ -6,7 +6,7 @@
 #
 # Test out ACLs.
 #
-#!/bin/bash
+#!/usr/bin/env bash
 seq=`basename $0`
 seqres=$RESULT_DIR/$seq
 
